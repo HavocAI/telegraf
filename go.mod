@@ -565,4 +565,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/bluenviron/gomavlib/v3 => github.com/HavocAI/gomavlib/v3 v3.0.0-20260311184619-cb3e4e706b25
+replace github.com/bluenviron/gomavlib/v3 => github.com/HavocAI/gomavlib/v3 v3.0.0-20260324154811-36d05cb0e886

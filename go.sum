@@ -750,6 +750,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapp
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.51.0/go.mod h1:otE2jQekW/PqXk1Awf5lmfokJx4uwuqcj1ab5SpGeW0=
 github.com/HavocAI/gomavlib/v3 v3.0.0-20260311184619-cb3e4e706b25 h1:shxTzekmGd38XSfvM0AsIqu9erDVVlqOu+JqI0UIVmw=
 github.com/HavocAI/gomavlib/v3 v3.0.0-20260311184619-cb3e4e706b25/go.mod h1:lHzNoYP+yq3ngVaVqV8XmiV63ICojODtkG41UOzgRsQ=
+github.com/HavocAI/gomavlib/v3 v3.0.0-20260324154811-36d05cb0e886 h1:1KfodFxQIBlqymFC3TgnB7KqHuDF1iEIkmkg7KnoMdw=
+github.com/HavocAI/gomavlib/v3 v3.0.0-20260324154811-36d05cb0e886/go.mod h1:lHzNoYP+yq3ngVaVqV8XmiV63ICojODtkG41UOzgRsQ=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/IBM/nzgo/v12 v12.0.9 h1:SwzYFU5ooXsTZsQhU6OsbUhs/fQyLvCtlJYSEZ58mN0=
