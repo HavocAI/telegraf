@@ -14,7 +14,7 @@ import (
 	"sync"
 
 	"github.com/bluenviron/gomavlib/v3"
-	"github.com/bluenviron/gomavlib/v3/pkg/dialects/ardupilotmega"
+	"github.com/bluenviron/gomavlib/v3/pkg/dialects/havocai"
 	"github.com/bluenviron/gomavlib/v3/pkg/frame"
 
 	"github.com/influxdata/telegraf"
@@ -158,7 +158,7 @@ func (m *Mavlink) Start(acc telegraf.Accumulator) error {
 	// Start MAVLink endpoint
 	connection, err := gomavlib.NewNode(gomavlib.NodeConf{
 		Endpoints:              []gomavlib.EndpointConf{m.endpointConfig},
-		Dialect:                ardupilotmega.Dialect,
+		Dialect:                havocai.Dialect,
 		OutVersion:             gomavlib.V2,
 		OutSystemID:            m.SystemID,
 		StreamRequestEnable:    m.StreamRequestFrequency > 0,
