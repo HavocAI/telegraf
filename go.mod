@@ -1,6 +1,6 @@
 module github.com/influxdata/telegraf
 
-go 1.24.0
+go 1.25.0
 
 godebug x509negativeserial=1
 
@@ -25,6 +25,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/HavocAI/mavlink-dialect/generated/go/havocai v0.0.0-20260429191216-1b8523a4a0af
 	github.com/IBM/nzgo/v12 v12.0.9
 	github.com/IBM/sarama v1.45.1
 	github.com/Masterminds/semver/v3 v3.3.1
@@ -62,7 +63,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.31.0
 	github.com/aws/smithy-go v1.22.3
 	github.com/benbjohnson/clock v1.3.5
-	github.com/bluenviron/gomavlib/v3 v3.1.0
+	github.com/bluenviron/gomavlib/v3 v3.3.1
 	github.com/blues/jsonata-go v1.5.4
 	github.com/bmatcuk/doublestar/v3 v3.0.0
 	github.com/boschrexroth/ctrlx-datalayer-golang v1.3.1
@@ -195,7 +196,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.14.0
 	github.com/srebhan/cborquery v1.0.4
 	github.com/srebhan/protobufquery v1.0.4
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/tbrandon/mbserver v0.0.0-20170611213546-993e1772cc62
 	github.com/tdrn-org/go-hue v0.3.0
 	github.com/testcontainers/testcontainers-go v0.37.0
@@ -564,5 +565,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/bluenviron/gomavlib/v3 => github.com/HavocAI/gomavlib/v3 v3.0.0-20260129171255-5f490aded1c1
