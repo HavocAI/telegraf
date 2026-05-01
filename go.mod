@@ -25,7 +25,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/HavocAI/mavlink-dialect/generated/go/havocai v0.0.0-20260429191216-1b8523a4a0af
+	github.com/HavocAI/mavlink-dialect/generated/go/havocai v0.0.0-20260501175224-01de0f8c949d
 	github.com/IBM/nzgo/v12 v12.0.9
 	github.com/IBM/sarama v1.45.1
 	github.com/Masterminds/semver/v3 v3.3.1
