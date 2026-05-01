@@ -93,6 +93,69 @@ Please use the [Community Slack](https://influxdata.com/slack) or
 comments for our engineering teams. GitHub issues are limited to actual issues
 and feature requests only.
 
+## 🐳 Docker (Havoc)
+
+This fork publishes a multi-arch image (`linux/amd64`, `linux/arm64`) to GHCR that replaces the standard Telegraf binary with one compiled from this repo, including the MAVLink input plugin.
+
+### Pulling a published image
+
+```bash
+# Specific semver release
+docker pull ghcr.io/havocai/telegraf:v1.35.0-havoc.1
+
+# Latest stable
+docker pull ghcr.io/havocai/telegraf:latest-havoc
+
+# Pinned to a commit SHA
+docker pull ghcr.io/havocai/telegraf:sha-e1f7aeeb
+```
+
+### Building locally
+
+Requires a GitHub token with read access to `github.com/HavocAI/mavlink-dialect` (your `gh` CLI session token works):
+
+```bash
+GITHUB_TOKEN=$(gh auth token) docker buildx build \
+  --secret id=GITHUB_TOKEN,env=GITHUB_TOKEN \
+  --build-arg GIT_TAG="" \
+  --build-arg COMMIT=$(git rev-parse --short=8 HEAD) \
+  --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+  --load \
+  -t telegraf-havoc:local \
+  .
+```
+
+To tag a release build, set `GIT_TAG` to the semver tag (drives the version string embedded in the binary):
+
+```bash
+  --build-arg GIT_TAG=v1.35.0-havoc.1 \
+```
+
+### Verifying the image
+
+```bash
+# Binary runs and reports version
+docker run --rm telegraf-havoc:local --version
+
+# MAVLink plugin is compiled in
+docker run --rm telegraf-havoc:local telegraf --usage mavlink
+
+# Config parses cleanly (connection refused to 127.0.0.1:5760 is expected)
+docker run --rm \
+  -v "$PWD/plugins/inputs/mavlink/sample.conf:/etc/telegraf/telegraf.conf:ro" \
+  telegraf-havoc:local \
+  --config /etc/telegraf/telegraf.conf \
+  --test
+```
+
+### CI tags
+
+| Trigger | Tags applied |
+|---|---|
+| Push to `master` | `sha-<commit>` |
+| Tag push `v*.*.*-havoc.*` | `v1.35.0-havoc.1`, `sha-<commit>`, `latest-havoc` |
+| Manual dispatch with `stable: true` | `sha-<commit>`, `latest-havoc` |
+
 ## 📜 License
 
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/influxdata/telegraf/blob/master/LICENSE)

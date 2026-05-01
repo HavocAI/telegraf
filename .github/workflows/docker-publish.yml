@@ -1,0 +1,190 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    tags:
+      - "v*.*.*-havoc.*"
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      stable:
+        description: "Also tag as latest-havoc"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/havocai/telegraf
+
+jobs:
+  # ── Build ──────────────────────────────────────────────────────────────────
+  # Each platform builds in parallel on a native runner (no QEMU) and pushes
+  # a content-addressed digest. The merge job assembles the manifest list.
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get token from GitHub App
+        uses: actions/create-github-app-token@v2
+        id: app_token
+        with:
+          app-id: ${{ secrets.REPO_READONLY_GITHUB_APP_ID }}
+          private-key: ${{ secrets.REPO_READONLY_GITHUB_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA:0:8}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            GIT_TAG=${{ github.ref_type == 'tag' && github.ref_name || '' }}
+            COMMIT=${{ steps.sha.outputs.short }}
+            BRANCH=${{ github.ref_name }}
+          secrets: |
+            GITHUB_TOKEN=${{ steps.app_token.outputs.token }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Merge ──────────────────────────────────────────────────────────────────
+  # Assembles the multi-arch manifest and applies all tags atomically.
+  merge:
+    name: Create multi-arch manifest
+    runs-on: ubuntu-24.04
+    needs: build
+    outputs:
+      sha_tag: ${{ steps.tags.outputs.sha_tag }}
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute tags
+        id: tags
+        run: |
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+          SHA_TAG="${{ env.IMAGE }}:sha-${SHA_SHORT}"
+          echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
+
+          TAGS="-t ${SHA_TAG}"
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAGS="${TAGS} -t ${{ env.IMAGE }}:${{ github.ref_name }}"
+            TAGS="${TAGS} -t ${{ env.IMAGE }}:latest-havoc"
+          fi
+
+          if [[ "${{ inputs.stable }}" == "true" ]]; then
+            TAGS="${TAGS} -t ${{ env.IMAGE }}:latest-havoc"
+          fi
+
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            ${{ steps.tags.outputs.tags }} \
+            $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+  # ── Validate ───────────────────────────────────────────────────────────────
+  # Pulls the just-published sha-tagged image and runs three checks:
+  #   1. binary executes and reports version
+  #   2. mavlink plugin is compiled in
+  #   3. sample config parses without errors (connection refused is expected)
+  validate:
+    name: Validate image
+    runs-on: ubuntu-24.04
+    needs: merge
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check version
+        run: docker run --rm ${{ needs.merge.outputs.sha_tag }} --version
+
+      - name: Check mavlink plugin presence
+        run: |
+          docker run --rm ${{ needs.merge.outputs.sha_tag }} telegraf --usage mavlink \
+            | grep -q "mavlink"
+          echo "mavlink plugin present"
+
+      - name: Smoke test config parse
+        run: |
+          output=$(timeout 30 docker run --rm \
+            -v "$PWD/plugins/inputs/mavlink/sample.conf:/etc/telegraf/telegraf.conf:ro" \
+            ${{ needs.merge.outputs.sha_tag }} \
+            --config /etc/telegraf/telegraf.conf \
+            --test 2>&1 || true)
+          echo "$output"
+          if echo "$output" | grep -qiE "error (parsing|loading) config|unknown field|unknown option"; then
+            echo "Config validation FAILED"
+            exit 1
+          fi
+          echo "Smoke test passed (connection errors are expected in CI)"
